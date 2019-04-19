@@ -10,7 +10,7 @@ The counterintuitive role of sexual selection in species maintenance and speciat
 
 Sexual conflict and speciation. [link](https://www.ncbi.nlm.nih.gov/pubmed/9533125)
 
-Goals for immediate short-term (4/19) [link to google doc] (https://docs.google.com/document/d/1c7v50N8wgPZeUhGdkkWxScgXnPjqjDlDxqpt6fnb2kA/edit) 
+Goals for immediate short-term (4/19) [link to google doc](https://docs.google.com/document/d/1c7v50N8wgPZeUhGdkkWxScgXnPjqjDlDxqpt6fnb2kA/edit) 
 
 Cathy mess with parameters and come up with qual/quant predictions/outcomes/what have you
 	and start putting stuff down in Results
