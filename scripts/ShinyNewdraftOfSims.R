@@ -184,7 +184,7 @@ geno_freq_plot <- output_freq %>%
   geom_line() + 
   facet_wrap(~pop, labeller = "label_both")+
   scale_x_continuous(trans = "log10") +
-  ggtitle("Genotype frequencies over time")+
+  ggtitle("Allele frequencies over time")+
   theme_tufte()
   
   
