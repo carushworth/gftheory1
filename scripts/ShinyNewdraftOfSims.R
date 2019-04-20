@@ -1,9 +1,13 @@
 # Best script in the world, for champions
 
-library(dplyr)
+library(tidyverse)
+library(gridExtra)
+library(ggthemes)
 # Conflict
+
+# helper functions to summarize haplo freqs, allele freqs, and ld 
 # this is to get allele freqs out
-tidying <- function(output){
+tidying   <- function(output){
   output <- gather(data = output, key = genopop, value = freq, - gen)
   tmp <- do.call(rbind,strsplit(output$genopop,""))[, -1]
   tmp[,1] <- ifelse( tmp[,1] == "0", "a","A")
@@ -24,7 +28,34 @@ tidying <- function(output){
     mutate(pollen_style = str_replace(string = haplo,pattern = "A|a",replacement = ""),
            local_adapt = str_replace(string = haplo,pattern = "MF|Mf|mF|mf",replacement = ""))
 }
-
+findFreqs <- function(tidied_data){
+  tidied_data %>% 
+    ungroup() %>%
+    mutate(am = freq * as.numeric(str_remove(haplo, "F|f") == "am"),
+           mf = freq * as.numeric(str_remove(haplo, "A|a") == "mf"),
+           af = freq * as.numeric(str_remove(haplo, "M|m") == "af"),
+           a  = freq * as.numeric(grepl(pattern = "a", haplo)), 
+           m  = freq * as.numeric(grepl(pattern = "m", haplo)), 
+           f  = freq * as.numeric(grepl(pattern = "f", haplo) )) %>%
+    group_by(pop, gen) %>%
+    summarise(am = sum(am),
+              mf = sum(mf),
+              af = sum(af),
+              a  = sum(a),
+              m  = sum(m),
+              f  = sum(f)) %>%
+    group_by(pop, gen)
+}
+findLD    <- function(tidied_data){
+  findFreqs(tidied_data) %>%
+    summarise(D_am = am - (a*m),
+              D_mf = mf - (m*f),
+              D_af = af - (a*f),
+              r_am = D_am / sqrt( a*(1-a) * m *(1-m) ), 
+              r_mf = D_mf / sqrt( m*(1-m) * f *(1-f) ),
+              r_af = D_af / sqrt( a*(1-a) * f *(1-f) )) %>%
+    ungroup() 
+}
 
 
 meiosis3loc <- function(this.dip, haplo.names, r12,r23, this.order = "AMF") {
@@ -97,9 +128,9 @@ migrateMateReproduceSelect <- function(diplos, focal.pop, prop.replaced, meiotic
 
 
 
-# WHY DID YOU HARDCODE r12 & r23 YANIV
+# WHY DID YOU HARDCODE r12 & r23 YANIV # I did not. these are default values. not hardcoded values
 runThreLocusSim <-function(n.gen = 1000, r12 = .1, r23 = .3,
-                           init.freqs = c(fA_0 = 0, fM_0 = 0, fF_0 = 0,fA_1 = 1, fM_1 = 1, fF_1 = .001), 
+                           init.freqs = c(fA_0 = 0, fM_0 = 0, fF_0 = 0,fA_1 = 1, fM_1 = 1, fF_1 = .01), 
                            discrim = 1, s = .4, prop.replaced0 = .1, prop.replaced1 = .1){
   # SETUP
   print(r12)
@@ -141,9 +172,46 @@ runThreLocusSim <-function(n.gen = 1000, r12 = .1, r23 = .3,
 }
 
 
-  
-output <- runThreLocusSim(n.gen = 1000, discrim = 1, s=.9, r12=0, r23 = 0.1) %>% tidying()
-ggplot(output, aes(x=gen,y=freq,color=pollen_style, group = haplo,  linetype = local_adapt )) + 
+#AMF   
+output        <- runThreLocusSim(n.gen = 10000, discrim = 1, s=.5, r12=.01, r23 = 0) %>% tidying()
+output_freq   <- findFreqs(output)
+output_LD     <- findLD(output)
+
+geno_freq_plot <- output_freq %>% 
+  select(- am, - mf, - af)    %>%  
+  gather(key = locus, value = freq, - pop, -gen) %>%
+  ggplot(aes(x=gen,y=freq,color=locus )) + 
   geom_line() + 
-  facet_grid(~pop) + 
-  scale_x_continuous(trans = "log")
+  facet_wrap(~pop, labeller = "label_both")+
+  scale_x_continuous(trans = "log10") +
+  ggtitle("Genotype frequencies over time")+
+  theme_tufte()
+  
+  
+  
+  ggplot(output, aes(x=gen,y=freq,color=pollen_style, group = haplo,  linetype = local_adapt )) + 
+  geom_line() + 
+  facet_wrap(~pop, labeller = "label_both")+
+  scale_x_continuous(trans = "log10") +
+  ggtitle("Haplotype frequencies over time")+
+  theme_tufte()
+
+ld_plot  <- output_LD %>% 
+  select(pop,gen,D_am, D_mf, D_af) %>%
+  gather(key = pair, value = D, - pop, - gen) %>%
+  ggplot(aes(x = gen, y = D, color = pair)) + 
+  geom_line()+
+  facet_wrap(~pop, labeller = "label_both")+ 
+  scale_x_continuous(trans = "log10")+
+  ggtitle("Linkage disequilibrium over time")+
+  theme_tufte()
+
+haplo_freq_plot <- ggplot(output, aes(x=gen,y=freq,color=pollen_style, group = haplo,  linetype = local_adapt )) + 
+  geom_line() + 
+  facet_wrap(~pop, labeller = "label_both")+
+  scale_x_continuous(trans = "log10") +
+  ggtitle("Haplotype frequencies over time")+
+  theme_tufte()
+
+
+grid.arrange(geno_freq_plot, ld_plot,haplo_freq_plot, ncol = 1)
