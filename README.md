@@ -20,3 +20,5 @@ Cathy read papers
 Yaniv and Cathy talk about papers
 Yaniv think about mathing some stuff (frequency of F? other?)
 Cathy choose flights for end of May
+
+Cathy's google spreadsheet for messing with parameters [link](https://docs.google.com/spreadsheets/d/14gh12Of1F_VeX10QlTgATpllZXAV0Zi9Xzffgasj_cM/edit?usp=sharing)
