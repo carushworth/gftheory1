@@ -10,15 +10,8 @@ The counterintuitive role of sexual selection in species maintenance and speciat
 
 Sexual conflict and speciation. [link](https://www.ncbi.nlm.nih.gov/pubmed/9533125)
 
-Goals for immediate short-term (4/19) [link to google doc](https://docs.google.com/document/d/1c7v50N8wgPZeUhGdkkWxScgXnPjqjDlDxqpt6fnb2kA/edit) 
+Goals for immediate short-term (6/6/19) [link to google doc](https://docs.google.com/document/d/1c7v50N8wgPZeUhGdkkWxScgXnPjqjDlDxqpt6fnb2kA/edit) 
 
-Cathy mess with parameters and come up with qual/quant predictions/outcomes/what have you
-	and start putting stuff down in Results
-Yaniv write function to get all pairwise LD
-Cathy think about quantifying reinforcement
-Cathy read papers
-Yaniv and Cathy talk about papers
-Yaniv think about mathing some stuff (frequency of F? other?)
-Cathy choose flights for end of May
+Cathy's google spreadsheet for initial messing with parameters (April 2019) [link](https://docs.google.com/spreadsheets/d/14gh12Of1F_VeX10QlTgATpllZXAV0Zi9Xzffgasj_cM/edit?usp=sharing)
 
-Cathy's google spreadsheet for messing with parameters [link](https://docs.google.com/spreadsheets/d/14gh12Of1F_VeX10QlTgATpllZXAV0Zi9Xzffgasj_cM/edit?usp=sharing)
+Cathy's google doc for secondary messing with parameters (June 7 2019) [link](https://docs.google.com/document/d/1_6jouSY6RkJQNSS9mhtjfyWaLlQ3mIwf7JqyH8RXUNk/edit)
