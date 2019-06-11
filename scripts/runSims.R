@@ -1,7 +1,9 @@
 # run sims / tidy output 
 # run once
+source("gf_sims.R")
+source("functions_forsummaries.R")
 n.gen          <- 10000
-blank          <- runTmpSim(n.gen = n.gen, get.blank = TRUE)
+blank          <- runGFsim(n.gen = n.gen, get.blank = TRUE)
 blank.template <- blankTemplate(blank)
 
 param.combos <- expand.grid(
@@ -9,14 +11,15 @@ param.combos <- expand.grid(
   m = c(0.01,0.05,0.1) , 
   r12 = c(0.0001),
   r23 = c(0.0001),
-  init_freq = c(0.01)
+  init_freq = c(0.01),
+  n_unlinked = c(2,3,4,5)
 )
-rm(output)
+
 
 
 # run params
 apply(param.combos, 1, function(PARAMS){
-  output  <- runTmpSim(n.gen = n.gen, 
+  output  <- runGFsim(n.gen = n.gen, 
                        discrim = 1,
                        s   =     PARAMS[["s"]],
                        r12 =     PARAMS[["r12"]],
@@ -24,9 +27,11 @@ apply(param.combos, 1, function(PARAMS){
                        init.freqs =  c(fA_0 = 0, fM_0 = 0, fF_0 = 0,
                                        fA_1 = 1, fM_1 = 1, fF_1 = PARAMS[["init_freq"]]),
                        prop.replaced0 = PARAMS[["m"]],
-                       prop.replaced1 = PARAMS[["m"]]
+                       prop.replaced1 = PARAMS[["m"]], 
+                       n.unlinked     = PARAMS[["n_unlinked"]] 
                        )
-  write_csv(output, path =  paste("prelimSimResults/",paste(paste(names(PARAMS), PARAMS, sep = "="),collapse = "_"),".csv",sep=""))
+  write_csv(output[["geno.time"]], path =  paste("prelimSimResults/outputs/",paste(paste(names(PARAMS), PARAMS, sep = "="),collapse = "_"),".csv",sep=""))
+  write_csv(output[["meanUs"]],    path =  paste("prelimSimResults/outputs/",paste("MeanUs",paste(names(PARAMS), PARAMS, sep = "="),collapse = "_"),".csv",sep=""))
 })
 
 #make plots
@@ -79,10 +84,8 @@ apply(param.combos, 1, function(PARAMS){
     scale_y_continuous(trans = "log1p")+
     theme_light() 
   my.plot <- grid.arrange(fig1,fig2,fig3,fig4, ncol =1)
-  ggsave(filename = paste("prelimSimResults/",paste(paste(names(PARAMS), PARAMS, sep = "="),collapse = "_"),".pdf",sep=""), 
+  ggsave(filename = paste("prelimSimResults/figures/",paste(paste(names(PARAMS), PARAMS, sep = "="),collapse = "_"),".pdf",sep=""), 
          plot = my.plot,device = "pdf")
-  
-  recover()
 })
 
 

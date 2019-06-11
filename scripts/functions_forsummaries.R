@@ -1,7 +1,8 @@
 # helper functions to summarize haplo freqs, allele freqs, and ld 
 # this is to get allele freqs out
 blankTemplate <- function(run){
-  tmp.output <- gather(data = run[,-grep("reinf",names(run))], key = genopop, value = freq, - gen)
+  run1 <- run[["geno.time"]]
+  tmp.output <- gather(data = run1[,-grep("reinf",names(run1))], key = genopop, value = freq, - gen)
   tmp <- do.call(rbind,strsplit(tmp.output$genopop,""))[, -1]
   tmp[,1] <- ifelse( tmp[,1] == "0", "a","A")
   tmp[,2] <- ifelse( tmp[,2] == "0", "m","M")
@@ -19,10 +20,10 @@ blankTemplate <- function(run){
 
 
 
-tidying   <- function(output, blank.template = NULL){
+tidying   <- function(output, blank.template = NULL, thing = "geno.time"){
+  output1 <- output[[thing]]
   if(is.null(blank.template )){
-    recover()
-  blank.template <- gather(data = output[,-grep("reinf",names(output))], key = genopop, value = freq, - gen)
+  blank.template <- gather(data = output1[,-grep("reinf",names(output1))], key = genopop, value = freq, - gen)
   tmp <- do.call(rbind,strsplit(blank.template$genopop,""))[, -1]
   tmp[,1] <- ifelse( tmp[,1] == "0", "a","A")
   tmp[,2] <- ifelse( tmp[,2] == "0", "m","M")
@@ -35,7 +36,7 @@ tidying   <- function(output, blank.template = NULL){
            mat = paste( tmp[,1], tmp[,2], tmp[,3], sep =  ""), 
            pat = paste( tmp[,4], tmp[,5], tmp[,6], sep =  "")) 
   }
-  my.freqs <- gather(data = output[,-grep("reinf",names(output))], key = genopop, value = freq, - gen) %>%select(freq)
+  my.freqs <- gather(data = output1[,-grep("reinf",names(output1))], key = genopop, value = freq, - gen) %>%select(freq)
   tmp.output <- as_tibble(blank.template) %>%
     mutate(freq = pull(my.freqs))         %>%
     gather(key = parent, value =  haplo, -gen, -genopop, - freq, - pop) %>%

@@ -83,7 +83,7 @@ migrateMateReproduceSelect <- function(diplos, focal.pop, prop.replaced, meiotic
 
 
 # WHY DID YOU HARDCODE r12 & r23 YANIV # I did not. these are default values. not hardcoded values
-runTmpSim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5, 
+runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5, 
                            init.freqs = c(fA_0 = 0, fM_0 = 0, fF_0 = 0,fA_1 = 1, fM_1 = 1, fF_1 = .01), 
                            discrim = 1, s = .4, 
                            prop.replaced0 = .1, 
@@ -188,7 +188,7 @@ runTmpSim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
       summarise(U = sum(freqs * mean_U), freqs = sum(freqs))       %>% 
       ungroup() 
     
-    c(g, 
+    meanUs[g,] <- c(g, 
       tmp.diplos2 %>% group_by(pop) %>% summarise(x = sum(U)) %>%pull(),
       unlist(tmp.diplos2 %>%
                mutate(geno = paste(A.mat, M.mat, F.mat, A.pat, M.pat, F.pat,   pop, sep = ""),
@@ -197,7 +197,7 @@ runTmpSim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
                spread(key = geno, value = meanGenoU))[names.geno.time])
     }
   }
-  return(list(geno.time = geno.time, meanUs = meanUs))
+  return(list(geno.time = data.frame(geno.time), meanUs = data.frame(meanUs)))
 }
   
 
