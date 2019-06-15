@@ -63,21 +63,63 @@ diploidSel <- function(tmp.freq, my.dips, s, focal.pop){
   return(newfreq)
 }
 
-migrateMateReproduceSelect <- function(diplos, focal.pop, prop.replaced, meiotic.prod, discrim, s){
+migrateMateReproduceSelect <- function(diplos, focal.pop, prop.replaced, meiotic.prod, discrim, s, delta_hap_components, hap.ids){
+  dhap <- rep(NA, 4*length(hap.ids))
   home.haps  <- colSums(meiotic.prod * diplos$freqs[diplos$pop == focal.pop] ) * (1-prop.replaced) 
   away.haps  <- colSums(meiotic.prod * diplos$freqs[diplos$pop != focal.pop] ) * (prop.replaced) # prop.replaced is migration rate
   my.haps    <- home.haps + away.haps# pollen pool
+  if(delta_hap_components){
+    init.hap <- colSums(meiotic.prod * diplos$freqs[diplos$pop == focal.pop])
+    # change in hap freq by migrations 
+    # change in pollen       no change in ovules   average
+    dp.migration.pollen <- my.haps - init.hap
+  }
   my.dips    <- diplos[diplos$pop == focal.pop,]                                                                     # females
   pat.haps   <- matingCombos(my.haps = my.haps , my.dips =  my.dips, discrim =discrim, meiotic.prod = meiotic.prod)  # mating rules
   mat.haps   <- meiotic.prod * my.dips$freqs                                                                         # meiosis in feamles
   new.genos  <- t(pat.haps) %*% (mat.haps) # rows are paternal, colums are maternal
   #
+  if(delta_hap_components){
+    # change in hap freq by migrations 
+    # change in pollen       no change in ovules   average
+    dp.mating.pollen <- rowSums(new.genos) - my.haps
+  }
   p.migrant  <- away.haps  /  my.haps # proportion of each pollen haplotype that is a migrant.. this is useful for downstream accounting. 
   pop.reinforce <- 1 - sum(rowSums(new.genos) * p.migrant ,na.rm=TRUE) /prop.replaced   # quantifying reinforcement as 1 - prob mating with migrant
   #
   before.sel <- c(t(new.genos)) # flip rows and columns and then flatten to make  new diploid freqsQ
   after.sel  <- diploidSel(tmp.freq = before.sel, my.dips = my.dips, s = s , focal.pop = focal.pop)
-  return(c(pop.reinforce,after.sel))
+  if(delta_hap_components){
+    dhap <- full_join(tibble(
+      migration_pollen = dp.migration.pollen, 
+      mating_pollen    = dp.mating.pollen,
+      hap              = names(dp.mating.pollen),
+      gf_hap           = str_sub(names( dp.mating.pollen ), 1 ,3)) %>%
+      group_by(gf_hap) %>%
+      summarise(migration_pollen = sum(migration_pollen), 
+                mating_pollen    = sum(mating_pollen)),
+    # change in hap freq by migrations 
+    # change in pollen       no change in ovules   average
+    my.dips %>% 
+      mutate(gf_hap  = paste(A.pat, M.pat, F.pat, sep = ""),
+             before.sel = before.sel, 
+             after.sel = after.sel) %>% 
+      group_by(gf_hap) %>% 
+      summarise(dpsel_pat = sum(after.sel) - sum(before.sel)), 
+    by = "gf_hap")
+    dhap <- full_join(dhap,my.dips %>% 
+      mutate(gf_hap  = paste(A.mat, M.mat, F.mat, sep = ""),
+             before.sel = before.sel, 
+             after.sel  = after.sel) %>% 
+      group_by(gf_hap) %>% 
+      summarise(dpsel_mat = sum(after.sel) - sum(before.sel)) ,
+      by = "gf_hap")
+    rownames_dhap <- dhap$gf_hap
+    dhap <- as.matrix(dhap[,-1])
+    rownames(dhap) <- rownames_dhap
+    dhap <- dhap[hap.ids,]
+  }
+  return(c(pop.reinforce, after.sel, c(dhap)))
 }  
 
 
@@ -90,7 +132,8 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
                            prop.replaced1 = .1,
                            this.order = "AMF",
                            n.unlinked =0,
-                           get.blank = FALSE){
+                           get.blank = FALSE,
+                           delta_hap_components = FALSE){
   # SETUP
   print(sprintf("s = %s, m = %s, r12 = %s, r23 = %s, init_freq = %s", s, prop.replaced0, r12, r23, init.freqs["fF_1"]))
   diplos <- expand.grid(data.frame(rbind(numeric(length = 2*(3+n.unlinked)+1),1)))
@@ -146,6 +189,11 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
   colnames(geno.time)   <- c("gen","reinf_0","reinf_1", names.geno.time)
   meanUs <- geno.time
   colnames(meanUs)[c(2:3)] <- c("U_0","U_1")
+  ##
+  hap.ids <- unique(str_sub(haplo.names,1,3))
+  dhap_components <- matrix(ncol = 1 + 2 * length(hap.ids) * 4, nrow = n.gen)
+  colnames(dhap_components) <- c("gen",paste(rep(c("p0","p1"), each=32),rep(paste(hap.ids,rep(c("migrationPollen", "matingPollen", "selPat", "selMat"),each = 8),sep="_"),2),sep="_"))
+  #
   if(get.blank){
     geno.time <- data.frame(geno.time)
     meanUs    <- data.frame(meanUs)
@@ -160,13 +208,20 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
                                        prop.replaced = prop.replaced0, 
                                        meiotic.prod = meiotic.prod , 
                                        discrim = discrim , 
-                                       s = s)
+                                       s = s,
+                                       delta_hap_components = delta_hap_components,
+                                       hap.ids = hap.ids)
     pop1 <- migrateMateReproduceSelect(diplos = diplos, 
                                        focal.pop = 1, 
                                        prop.replaced = prop.replaced1, 
                                        meiotic.prod = meiotic.prod , 
                                        discrim = discrim, 
-                                       s = s)
+                                       s = s,
+                                       delta_hap_components = delta_hap_components,
+                                       hap.ids = hap.ids)
+    dhap_components[g,]<- c(g,pop0[(length(pop0)-31):length(pop0)],pop1[(length(pop1)-31):length(pop1)])
+    pop0 <- pop0[-((length(pop0)-31):length(pop0))] 
+    pop1 <- pop1[-((length(pop1)-31):length(pop1))] 
     print(g)
     diplos$freqs  <- c(pop0[-1], pop1[-1])
     if(n.unlinked == 0){ geno.time[g,]  <- c(g, pop0[1], pop1[1],  diplos$freqs)  }
@@ -197,7 +252,10 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
                spread(key = geno, value = meanGenoU))[names.geno.time])
     }
   }
-  return(list(geno.time = data.frame(geno.time), meanUs = data.frame(meanUs)))
+  return(list(geno.time = data.frame(geno.time), 
+              meanUs = data.frame(meanUs),
+              dhaps  = data.frame(dhap_components)))
 }
-  
+
+
 
