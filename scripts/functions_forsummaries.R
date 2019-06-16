@@ -1,8 +1,7 @@
 # helper functions to summarize haplo freqs, allele freqs, and ld 
 # this is to get allele freqs out
 blankTemplate <- function(run){
-  run1 <- run[["geno.time"]]
-  tmp.output <- gather(data = run1[,-grep("reinf",names(run1))], key = genopop, value = freq, - gen)
+  tmp.output <- gather(data = run[,-grep("reinf",names(run))], key = genopop, value = freq, - gen)
   tmp <- do.call(rbind,strsplit(tmp.output$genopop,""))[, -1]
   tmp[,1] <- ifelse( tmp[,1] == "0", "a","A")
   tmp[,2] <- ifelse( tmp[,2] == "0", "m","M")
@@ -20,10 +19,9 @@ blankTemplate <- function(run){
 
 
 
-tidying   <- function(output, blank.template = NULL, thing = "geno.time"){
-  output1 <- output[[thing]]
+tidyingHaps   <- function(output, blank.template = NULL){
   if(is.null(blank.template )){
-  blank.template <- gather(data = output1[,-grep("reinf",names(output1))], key = genopop, value = freq, - gen)
+  blank.template <- gather(data = output[,-grep("reinf",names(output))], key = genopop, value = freq, - gen)
   tmp <- do.call(rbind,strsplit(blank.template$genopop,""))[, -1]
   tmp[,1] <- ifelse( tmp[,1] == "0", "a","A")
   tmp[,2] <- ifelse( tmp[,2] == "0", "m","M")
@@ -32,17 +30,18 @@ tidying   <- function(output, blank.template = NULL, thing = "geno.time"){
   tmp[,5] <- ifelse( tmp[,5] == "0", "m","M")
   tmp[,6] <- ifelse( tmp[,6] == "0", "f","F")
   blank.template <- blank.template %>% 
-    mutate(pop = tmp[,9],
+    mutate(pop = tmp[,7],
            mat = paste( tmp[,1], tmp[,2], tmp[,3], sep =  ""), 
            pat = paste( tmp[,4], tmp[,5], tmp[,6], sep =  "")) 
   }
-  my.freqs <- gather(data = output1[,-grep("reinf",names(output1))], key = genopop, value = freq, - gen) %>%select(freq)
+  my.freqs <- gather(data = output[,-grep("reinf",names(output))], key = genopop, value = freq, - gen) %>%select(freq)
   tmp.output <- as_tibble(blank.template) %>%
     mutate(freq = pull(my.freqs))         %>%
     gather(key = parent, value =  haplo, -gen, -genopop, - freq, - pop) %>%
     mutate(freq = freq/2) %>% 
     group_by(gen , pop, haplo) %>% 
     summarise(freq = sum(freq))
+  #this bit is slow and non-param result specific so could be resturctured for speed
   tmp.output <- tmp.output %>%
     mutate(pollen_style = str_remove_all(string = haplo ,pattern = "A|a"),
            pollen_adapt = str_remove_all(string = haplo ,pattern = "F|f"),
@@ -50,13 +49,13 @@ tidying   <- function(output, blank.template = NULL, thing = "geno.time"){
            local_adapt  = as.numeric(grepl(pattern = "A", x = haplo)),
            style_pref   = as.numeric(grepl(pattern = "F", x = haplo)),
            pollen_sig   = as.numeric(grepl(pattern = "M", x = haplo))) 
-  return(tmp.output)
+  return(tmp.output %>% ungroup())
 }
 
 
-tidyReinforcement <- function(output){
+tidyingReinforcement <- function(output){
   reinf <- output[,c(1,grep("reinf",names(output)))]
-  colnames(reinf) <- c("gen","p0","p1")
+  colnames(reinf) <- c("gen","0","1")
   gather(data = reinf, key = pop, value = reinforce_strength, -gen) 
 }
 
@@ -72,9 +71,21 @@ findFreqs <- function(tidied_data){
     ungroup()
 }
 
+tidyingAlleleFreqs <- function(output){
+  # require allele freqs and ld format
+  output %>% 
+    select(-starts_with("ld"))               %>%
+    rename(A = freq_A, M = freq_M, F = freq_F) %>%
+    gather(key = allele, value = freq, - gen, -pop)
+}
 
 
-
+tidyingLD <- function(output){
+  output %>% 
+    select(-starts_with("freq"))               %>%
+    rename(AM = ld_AM, MF = ld_MF, AF = ld_AF) %>%
+    gather(key = pair, value = ld, - gen, -pop)
+}
 
 
 
