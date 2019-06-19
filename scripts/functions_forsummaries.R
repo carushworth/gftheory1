@@ -132,33 +132,25 @@ alleleChange <- function(output){
 
 
 
-
-
-#findFreqs <- function(tidied_data){
-#  tidied_data %>% 
-#    ungroup() %>%
-#    mutate(am = freq * as.numeric(str_remove(haplo, "F|f") == "am"),
-#           mf = freq * as.numeric(str_remove(haplo, "A|a") == "mf"),
-#           af = freq * as.numeric(str_remove(haplo, "M|m") == "af"),
-#           a  = freq * as.numeric(grepl(pattern = "a", haplo)), 
-#           m  = freq * as.numeric(grepl(pattern = "m", haplo)), 
-#           f  = freq * as.numeric(grepl(pattern = "f", haplo) )) %>%
-#    group_by(pop, gen) %>%
-#    summarise(am = sum(am),
-#              mf = sum(mf),
-#              af = sum(af),
-#              a  = sum(a),
-#              m  = sum(m),
-#              f  = sum(f)) %>%
-#    group_by(pop, gen)
-#}
-#findLD    <- function(tidied_data){
-#  findFreqs(tidied_data) %>%
-#    summarise(D_am = am - (a*m),
-#              D_mf = mf - (m*f),
-#              D_af = af - (a*f),
-#              r_am = D_am / sqrt( a*(1-a) * m *(1-m) ), 
-#              r_mf = D_mf / sqrt( m*(1-m) * f *(1-f) ),
-#              r_af = D_af / sqrt( a*(1-a) * f *(1-f) )) %>%
-#    ungroup() 
-#}
+tidyingMeanU <- function(runs){
+  tmp.output <- bind_cols( blankTemplate(runs[[1]]), 
+                           runs[["meanUs"]] %>% 
+                             select(-U_0,-U_1) %>% 
+                             gather(key = genpop, value = meanU, -gen)) 
+  if(tmp.output %>% mutate(z=genpop == genopop) %>% summarise(mean(z)) %>% pull() != 1 |tmp.output %>% mutate(z=gen == gen1) %>% summarise(mean(z)) %>% pull() != 1) warning("something went wrong, yell at yaniv")
+  tmp.output <- tmp.output %>% 
+    select(-genopop, - genpop, -gen1) %>% 
+    gather(key = parent, value = haplo, - gen, - meanU, -freq, - pop)
+  haps    <- tmp.output %>% 
+    group_by(gen, pop, haplo) %>% 
+    summarize(U = sum(meanU * freq,na.rm = TRUE) / sum(freq))
+  alleles <- tmp.output %>% 
+    mutate(A = as.numeric(grepl("A", haplo)),
+           M = as.numeric(grepl("M", haplo)),
+           F = as.numeric(grepl("F", haplo))) %>%
+    select(-parent, -haplo) %>% 
+    gather(key = locus, value = allele,- gen, -freq, -pop, -meanU) %>% 
+    group_by(gen, pop, locus, allele) %>% 
+    summarize(U = sum(meanU * freq,na.rm = TRUE) / sum(freq))
+  return(list(haps = haps %>% ungroup(), alleles = alleles %>% ungroup()))
+}

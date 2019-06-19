@@ -136,3 +136,41 @@ alleleFreqChangePlotAlt <- function(tmp.allele.change, title = NULL){
     theme_light() 
   return(my.plot)
 }
+
+
+hapUnlinkedPlot <- function(tmp.U.hap, title = NULL){
+  my.plot <- tmp.U.hap %>% 
+    mutate(pollen_style = str_remove(haplo, "A|a"),
+           local_adapt  = as.numeric(str_sub(haplo, 1,1) == "A"))%>%
+    mutate(local_adapt = factor(case_when(local_adapt == 0 ~ "maize",local_adapt == 1~"mex"),levels = c("mex","maize")),
+           pop = factor(case_when(pop == 0 ~ "maize",pop == 1~"mex"),levels = c("mex","maize"))) %>%
+    ggplot(aes(x = gen, 
+               y = U,    
+               group = paste(pop, haplo), 
+               color = pollen_style,
+               lwd   = local_adapt))+
+    geom_line() +
+    facet_grid(~pop) +
+    scale_x_continuous(trans = "log10")+#,limits = c(100,10000))+
+    ggtitle(label = title)+
+    scale_size_manual(values = c(.7,1.6))+ 
+    theme_light() 
+  return(my.plot)
+}
+
+
+alleleUnlinkedPlot <- function(tmp.U.allele, title = NULL){
+  my.plot <- tmp.U.allele %>% 
+    mutate(pop = factor(case_when(pop == 0 ~ "maize",pop == 1~"mex"),levels = c("mex","maize"))) %>%
+    ggplot(aes(x = gen, 
+               y = U,    
+               group = paste(pop, locus, allele), 
+               color = locus))+
+    geom_line() +
+    facet_grid(allele~pop, labeller = "label_both") +
+    scale_x_continuous(trans = "log10")+#,limits = c(100,10000))+
+    ggtitle(label = title)+
+    scale_size_manual(values = c(.7,1.6))+ 
+    theme_light() 
+  return(my.plot)
+}
