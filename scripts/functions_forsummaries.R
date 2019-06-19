@@ -88,6 +88,47 @@ tidyingLD <- function(output){
 }
 
 
+tidyingFreqChange <- function(output){ 
+  tmp.output <- output  %>% 
+    gather(key = thing, value = dhap, -gen) %>%
+    mutate( pop = ifelse(grepl(pattern= "p0",thing), 0, 1),
+            thing = str_remove(thing, pattern = "p0_|p1_"),
+            time  = str_remove(thing, pattern = "..._"),
+            hap   = str_remove(thing, pattern = "_.*"))     %>%
+    select(-thing)                                          %>%
+    mutate(haplo = paste(ifelse(str_sub(hap,1,1)==0,"a","A"),
+                         ifelse(str_sub(hap,2,2)==0,"m","M"),
+                         ifelse(str_sub(hap,3,3)==0,"f","F"), sep =  ""),
+           A = str_sub(hap,1,1), 
+           M = str_sub(hap,2,2),
+           F = str_sub(hap,3,3))
+  tmp.output <- tmp.output %>%
+    mutate(time = case_when(time == "migrationPollen" ~ "migrationPollen",
+                            time == "matingPollen"    ~ "matingPollen",
+                            grepl("sel", time)        ~ "sel")) %>%
+    group_by(gen, pop, haplo, A, M, F, time) %>%
+    summarise(dhap = mean(dhap))   %>% ungroup() %>%
+    mutate(time = factor(time,levels = c("migrationPollen","matingPollen","sel")))
+  tmp.output <- tmp.output %>%
+    mutate(pollen_style = str_remove_all(string = haplo ,pattern = "A|a"),
+           pollen_adapt = str_remove_all(string = haplo ,pattern = "F|f"),
+           style_adapt = str_remove_all(string = haplo ,pattern = "M|m"),
+           local_adapt  = as.numeric(grepl(pattern = "A", x = haplo)),
+           style_pref   = as.numeric(grepl(pattern = "F", x = haplo)),
+           pollen_sig   = as.numeric(grepl(pattern = "M", x = haplo))) 
+  return(tmp.output %>% ungroup())
+}
+
+
+alleleChange <- function(output){
+  output %>% 
+    group_by(pop, gen, time, A) %>%  mutate(dA = sum(as.numeric(A) * dhap)) %>% ungroup()  %>%
+    group_by(pop, gen, time, M) %>%  mutate(dM = sum(as.numeric(M) * dhap)) %>% ungroup()  %>%
+    group_by(pop, gen, time, F) %>%  mutate(dF = sum(as.numeric(F) * dhap)) %>% ungroup()  %>%
+    select(gen, pop, time, A = dA, M = dM, F = dF)                                    %>%
+    gather(key = allele, value = delta_p, -gen, -pop, -time)                          %>% 
+    group_by(gen, pop, time, allele) %>% summarise(delta_p = mean(delta_p)) %>%ungroup()
+}
 
 
 

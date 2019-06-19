@@ -2,8 +2,8 @@
 source("gf_sims.R")
 source("functions_forsummaries.R")
 source("functions_forplots.R")
-example.sim <- runGFsim(n.gen = 10000, discrim = 1, s   =     .3,
-         r12 =     1e-04, r23 =     1e-04,
+example.sim <- runGFsim(n.gen = 10000, discrim = 1, s   =     .2,
+         r12 =     .001, r23 =     .001,
          init.freqs =  c(fA_0 = 0, fM_0 = 0, fF_0 = 0, fA_1 = 1, fM_1 = 1, fF_1 = 0.01),
          prop.replaced0 = .01,   prop.replaced1 = .01,  n.unlinked     = 2,delta_hap_components = TRUE ) 
 
@@ -18,15 +18,26 @@ tidy.allele.freqs   <- tidyingAlleleFreqs(allele.freqs.and.ld)
 tidy.ld             <- tidyingLD(allele.freqs.and.ld)
 
 # reinforcement  
-tidy.reinforce      <- tidyReinforcement(example.sim$geno.time)
+tidy.reinforce  <- tidyingReinforcement(example.sim$geno.time)
 
+# freq change components
+tidy.freq.change   <- tidyingFreqChange(example.sim$dhaps)
+tidy.allele.change <- alleleChange(tidy.freq.change)
+
+
+## Plots  
 # Haplotype Frequency Plot
-hapFreqPlot(tidy.haps, title = "s=.3, r12 = r23 = 1e-04, m = .01, n.unlinked = 2")
+  hapFreqPlot(tidy.haps, title = "s=.3, r12 = r23 = 1e-04, m = .01, n.unlinked = 2")
 # Allele Frequency Plot
-alleleFreqPlot(tidy.allele.freqs, title = "s=.3, r12 = r23 = 1e-04, m = .01, n.unlinked = 2")
+  alleleFreqPlot(tidy.allele.freqs, title = "s=.3, r12 = r23 = 1e-04, m = .01, n.unlinked = 2")
 # LD Plot
-ldPlot(tidy.ld, title = "s=.3, r12 = r23 = 1e-04, m = .01, n.unlinked = 2")
+  ldPlot(tidy.ld, title = "s=.3, r12 = r23 = 1e-04, m = .01, n.unlinked = 2")
 # reinforcement plot
-reinforcePlot(tidy.reinforce, title = "s=.3, r12 = r23 = 1e-04, m = .01, n.unlinked = 2")
-
+  reinforcePlot(tidy.reinforce, title = "s=.3, r12 = r23 = 1e-04, m = .01, n.unlinked = 2")
+# Haplotype Frequency Change Plot
+  hapFreqChangePlot(tidy.freq.change , title = "s=.3, r12 = r23 = 1e-04, m = .01, n.unlinked = 2")
+# Allele Frequency Change Plot
+  alleleFreqChangePlot(tidy.allele.change, title = "s=.3, r12 = r23 = 1e-04, m = .01, n.unlinked = 2")
+  
+  
 tidy.MeanU <- tidyingMeanU(example.sim$meanUs, thing = "meanUs")

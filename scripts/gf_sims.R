@@ -231,11 +231,11 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
       summarise(freqs = sum(freqs)) %>%
       ungroup() %>%
       mutate(geno = paste(A.mat, M.mat, F.mat, A.pat, M.pat, F.pat,   pop, sep = "")) 
-    
     # FIX THIS
     geno.time[g,]  <- c(g, pop0[1], pop1[1], 
                         unlist(tmp.diplos %>% select(freqs, geno ) %>% 
                                  spread(key = geno, value = freqs))[names.geno.time]   )
+#    if(g == 10){recover()}
     tmp.diplos2 <- diplos %>% 
       mutate(mean_U = diplos %>% select(starts_with("U")) %>% rowMeans() )      %>% 
       group_by(A.mat, M.mat, F.mat, A.pat ,M.pat, F.pat, pop) %>%
