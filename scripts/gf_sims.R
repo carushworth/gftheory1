@@ -222,7 +222,7 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
     dhap_components[g,]<- c(g,pop0[(length(pop0)-31):length(pop0)],pop1[(length(pop1)-31):length(pop1)])
     pop0 <- pop0[-((length(pop0)-31):length(pop0))] 
     pop1 <- pop1[-((length(pop1)-31):length(pop1))] 
-    print(g)
+    #if(g%%100 == 0){print(sprintf("generation %s of %s",g, n.gen))}
     diplos$freqs  <- c(pop0[-1], pop1[-1])
     if(n.unlinked == 0){ geno.time[g,]  <- c(g, pop0[1], pop1[1],  diplos$freqs)  }
     if(n.unlinked > 0){
@@ -251,9 +251,19 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
                spread(key = geno, value = meanGenoU))[names.geno.time])
     }
   }
+  max_reinforce <- max(geno.time[,"reinf_1"])
+  min_diff_A    <- min(abs(data.frame(geno.time) %>% select(starts_with("X1")) %>% select(ends_with("0"))%>%rowSums() -  data.frame(geno.time) %>% select(starts_with("X1")) %>% select(ends_with("1"))%>%rowSums() ))
+  max_freq_M0   <- data.frame(geno.time) %>% select(matches("X.1")) %>% select(ends_with("0")) %>% rowSums() %>%max()
+  max_freq_F1   <- data.frame(geno.time) %>% select(matches("X..1")) %>% select(ends_with("1")) %>% rowSums() %>%max()
+  final_adapt_diff_unlinked <- diff(rev(meanUs[n.gen,c("U_0","U_1")]))
+    names(final_adapt_diff_unlinked) <- NULL
+
   return(list(geno.time = data.frame(geno.time), 
               meanUs = data.frame(meanUs),
-              dhaps  = data.frame(dhap_components)))
+              dhaps  = data.frame(dhap_components),
+              summary.stats = c(max_reinforce = max_reinforce, min_diff_A = min_diff_A, max_freq_M0 = max_freq_M0, max_freq_F1 = max_freq_F1, final_adapt_diff_unlinked = final_adapt_diff_unlinked),
+              params = c(this.order = this.order, n.gen = n.gen, r12 =r12, r23 =r23, r34=r34, s=s, n.unlinked = n.unlinked, prop.replaced0 = prop.replaced0 , prop.replaced1 = prop.replaced1, discrim = discrim)
+        ))
 }
 
 
