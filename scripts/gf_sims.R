@@ -86,7 +86,7 @@ migrateMateReproduceSelect <- function(diplos, focal.pop, prop.replaced, meiotic
   }
   p.migrant  <- away.haps  /  my.haps # proportion of each pollen haplotype that is a migrant.. this is useful for downstream accounting. 
   pop.reinforce <- 1 - sum(rowSums(new.genos) * p.migrant ,na.rm=TRUE) /prop.replaced   # quantifying reinforcement as 1 - prob mating with migrant
-  #
+  # first thing in pop0 and pop1
   before.sel <- c(t(new.genos)) # flip rows and columns and then flatten to make  new diploid freqsQ
   after.sel  <- diploidSel(tmp.freq = before.sel, my.dips = my.dips, s = s , focal.pop = focal.pop)
   if(delta_hap_components){
@@ -134,9 +134,9 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
                            n.unlinked =0,
                            get.blank = FALSE,
                            delta_hap_components = FALSE){
-  # SETUP
+  # SETUP (this makes all the different diploid genos)
   print(sprintf("s = %s, m = %s, r12 = %s, r23 = %s, init_freq = %s", s, prop.replaced0, r12, r23, init.freqs["fF_1"]))
-  diplos <- expand.grid(data.frame(rbind(numeric(length = 2*(3+n.unlinked)+1),1)))
+  diplos <- expand.grid(data.frame(rbind(numeric(length = 2*(3+n.unlinked)+1),1))) 
   tmp.names <- c("A","M","F",paste("U", 0:n.unlinked,sep ="")[-1])
   colnames(diplos) <- c(paste(rep(tmp.names,times = 2), rep(c("mat","pat"), each = length(tmp.names)), sep="."),"pop")
   diplos$freqs <-  apply(diplos, 1, function(X){
@@ -147,7 +147,7 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
     f.big           <- rep(tmp.big, 2) 
     prod(as.numeric((1 - X[-length(X)]) == 0) * f.big  + as.numeric((X[-length(X)]) == 0) * (1-f.big))
   })
-  haplos <- expand.grid(data.frame(rbind(numeric(length = (3+n.unlinked)+1),1)))
+  haplos <- expand.grid(data.frame(rbind(numeric(length = (3+n.unlinked)+1),1))) # makes all the different haplotypes
   names(haplos) <- c("A","M","F",paste("U", 0:n.unlinked,sep ="")[-1],"pop")
   haplo.names  <-  apply(unique(haplos[,-ncol(haplos)]), 1, paste, collapse = "")
   #
@@ -179,11 +179,11 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
     rownames(unlinked.meiosis) <- apply(unlinked.complex,1, paste,collapse="")
     colnames(unlinked.meiosis) <- unlinked.haps
     unlinked.meiosis           <- unlinked.meiosis[tmp.complex ,str_sub(haplo.names,4)]
-    meiotic.prod               <- three.loc.meiosis * unlinked.meiosis 
+    meiotic.prod               <- three.loc.meiosis * unlinked.meiosis # jam them together
     rownames( meiotic.prod)    <- apply(diplos[diplos$pop == 0,1:(ncol(diplos)-2)], 1, paste, collapse = "")
     rm(unlinked.meiosis, three.loc.meiosis,tmp.complex,unlinked.haps)
   }
-  ###
+  ### assigning names to everything
   names.geno.time       <- c(apply(unique(diplos[,grep("U|q",names(diplos),invert = T)]), 1, paste, collapse = ""))
   geno.time             <- matrix(ncol = 3 + length(names.geno.time), nrow = n.gen)
   colnames(geno.time)   <- c("gen","reinf_0","reinf_1", names.geno.time)
@@ -193,7 +193,7 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
   hap.ids <- unique(str_sub(haplo.names,1,3))
   dhap_components <- matrix(ncol = 1 + 2 * length(hap.ids) * 4, nrow = n.gen)
   colnames(dhap_components) <- c("gen",paste(rep(c("p0","p1"), each=32),rep(paste(hap.ids,rep(c("migrationPollen", "matingPollen", "selPat", "selMat"),each = 8),sep="_"),2),sep="_"))
-  #
+  # this loop can give a blank output
   if(get.blank){
     geno.time <- data.frame(geno.time)
     meanUs    <- data.frame(meanUs)
@@ -223,8 +223,9 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
     pop0 <- pop0[-((length(pop0)-31):length(pop0))] 
     pop1 <- pop1[-((length(pop1)-31):length(pop1))] 
     #if(g%%100 == 0){print(sprintf("generation %s of %s",g, n.gen))}
-    diplos$freqs  <- c(pop0[-1], pop1[-1])
+    diplos$freqs  <- c(pop0[-1], pop1[-1]) # put together pop0 and pop1
     if(n.unlinked == 0){ geno.time[g,]  <- c(g, pop0[1], pop1[1],  diplos$freqs)  }
+    # for each gen of geno.time we have gen, reinforcement in each pop, and the diplo frequencies
     if(n.unlinked > 0){
     tmp.diplos <- diplos %>% 
       group_by(A.mat, M.mat, F.mat, A.pat ,M.pat, F.pat, pop) %>%
@@ -255,7 +256,7 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
   min_diff_A    <- min(abs(data.frame(geno.time) %>% select(starts_with("X1")) %>% select(ends_with("0"))%>%rowSums() -  data.frame(geno.time) %>% select(starts_with("X1")) %>% select(ends_with("1"))%>%rowSums() ))
   max_freq_M0   <- data.frame(geno.time) %>% select(matches("X.1")) %>% select(ends_with("0")) %>% rowSums() %>%max()
   max_freq_F1   <- data.frame(geno.time) %>% select(matches("X..1")) %>% select(ends_with("1")) %>% rowSums() %>%max()
-  final_adapt_diff_unlinked <- diff(rev(meanUs[n.gen,c("U_0","U_1")]))
+  final_adapt_diff_unlinked <- diff(rev(meanUs[n.gen,c("U_0","U_1")])) # how much adaptive divergence do we have at the end (we start with complete)
     names(final_adapt_diff_unlinked) <- NULL
 
   return(list(geno.time = data.frame(geno.time), 

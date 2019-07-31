@@ -2,26 +2,28 @@
 source("gf_sims.R")
 source("functions_forsummaries.R")
 source("functions_forplots.R")
-example.sim <- runGFsim(n.gen = 100, discrim = 1, s   =     .2,
-         r12 =     .001, r23 =     .001, 
+example.sim <- runGFsim(n.gen = 10000, discrim = 1, s   =     .75,
+         r12 =     .0001, r23 =     .0001, 
          init.freqs =  c(fA_0 = 0, fM_0 = 0, fF_0 = 0, fA_1 = 1, fM_1 = 1, fF_1 = 0.01),
-         prop.replaced0 = .01,   prop.replaced1 = .01,  n.unlinked     = 2,delta_hap_components = TRUE ) 
+         prop.replaced0 = .1,   prop.replaced1 = .1,  n.unlinked     = 0,delta_hap_components = TRUE ) 
 
 #############
 # Frequencies and reinfrocement
-# haplotypes
+# haplotypes, only looking at AMF not at unlinked stuff
 tidy.haps           <- tidyingHaps(example.sim$geno.time) # local adapt strictly refers to the a locus, not unlinked loci
 
 # alleles and ld
 allele.freqs.and.ld <- findFreqs(tidy.haps)
 tidy.allele.freqs   <- tidyingAlleleFreqs(allele.freqs.and.ld)
-tidy.ld             <- tidyingLD(allele.freqs.and.ld)
+tidy.ld             <- tidyingLD(allele.freqs.and.ld) # each pairwise D
 
 # reinforcement  
 tidy.reinforce  <- tidyingReinforcement(example.sim$geno.time)
 
 # freq change components
 tidy.freq.change   <- tidyingFreqChange(example.sim$dhaps)
+# dhap is hap change freq in that step for each gen
+# 
 tidy.allele.change <- alleleChange(tidy.freq.change)
 
 
