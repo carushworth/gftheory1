@@ -257,7 +257,7 @@ runGFsim <-function(n.gen = Inf, r12 = 1e-4, r23 = 0,
                spread(key = geno, value = meanGenoU))[names.geno.time])
     }
     time.to.stop <- ((g+1) > min.gen) & (diff.freqs < tol | (g+1) > n.gen | (g+1) > max.gen)
-    print(paste("gen = ",g, "   & diff.freqs = ",diff.freqs))
+    #print(paste("gen = ",g, "   & diff.freqs = ",diff.freqs))
   }
   geno.time <- geno.time[1:g,]
   meanUs    <- meanUs[1:g,]
