@@ -125,15 +125,17 @@ migrateMateReproduceSelect <- function(diplos, focal.pop, prop.replaced, meiotic
 
 
 # WHY DID YOU HARDCODE r12 & r23 YANIV # I did not. these are default values. not hardcoded values
-runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5, 
+runGFsim <-function(n.gen = Inf, r12 = 1e-4, r23 = 0, 
                            init.freqs = c(fA_0 = 0, fM_0 = 0, fF_0 = 0,fA_1 = 1, fM_1 = 1, fF_1 = .01), 
-                           discrim = 1, s = .4, 
+                           discrim = 1, s = .75, tol = 1e-7, max.gen = 2e6, min.gen = 1e3,
                            prop.replaced0 = .1, 
                            prop.replaced1 = .1,
                            this.order = "AMF",
                            n.unlinked =0,
                            get.blank = FALSE,
-                           delta_hap_components = FALSE){
+                           delta_hap_components = FALSE
+                    ){
+  if(is.na(tol)){  max.gen  = n.gen; tol <- Inf}
   # SETUP (this makes all the different diploid genos)
   print(sprintf("s = %s, m = %s, r12 = %s, r23 = %s, init_freq = %s", s, prop.replaced0, r12, r23, init.freqs["fF_1"]))
   diplos <- expand.grid(data.frame(rbind(numeric(length = 2*(3+n.unlinked)+1),1))) 
@@ -185,24 +187,26 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
   }
   ### assigning names to everything
   names.geno.time       <- c(apply(unique(diplos[,grep("U|q",names(diplos),invert = T)]), 1, paste, collapse = ""))
-  geno.time             <- matrix(ncol = 3 + length(names.geno.time), nrow = n.gen)
+  geno.time             <- matrix(ncol = 3 + length(names.geno.time), nrow = max.gen)
   colnames(geno.time)   <- c("gen","reinf_0","reinf_1", names.geno.time)
   meanUs <- geno.time
   colnames(meanUs)[c(2:3)] <- c("U_0","U_1")
   ##
   hap.ids <- unique(str_sub(haplo.names,1,3))
-  dhap_components <- matrix(ncol = 1 + 2 * length(hap.ids) * 4, nrow = n.gen)
+  dhap_components <- matrix(ncol = 1 + 2 * length(hap.ids) * 4, nrow = max.gen)
   colnames(dhap_components) <- c("gen",paste(rep(c("p0","p1"), each=32),rep(paste(hap.ids,rep(c("migrationPollen", "matingPollen", "selPat", "selMat"),each = 8),sep="_"),2),sep="_"))
   # this loop can give a blank output
   if(get.blank){
     geno.time <- data.frame(geno.time)
     meanUs    <- data.frame(meanUs)
-    geno.time[,"gen"] <- 1:n.gen
-    meanUs[,"gen"] <- 1:n.gen
+    geno.time[,"gen"] <- 1: max.gen
+    meanUs[,"gen"] <- 1: max.gen
     return(list(geno.time = geno.time, meanUs = meanUs))
   }
-  for(g in 1:n.gen){
-    #    if(g == 5000){recover()}
+  time.to.stop = FALSE
+  g <- 0
+  while(! time.to.stop){
+    g <- g + 1
     pop0 <- migrateMateReproduceSelect(diplos = diplos, 
                                        focal.pop = 0, 
                                        prop.replaced = prop.replaced0, 
@@ -223,8 +227,10 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
     pop0 <- pop0[-((length(pop0)-31):length(pop0))] 
     pop1 <- pop1[-((length(pop1)-31):length(pop1))] 
     #if(g%%100 == 0){print(sprintf("generation %s of %s",g, n.gen))}
-    diplos$freqs  <- c(pop0[-1], pop1[-1]) # put together pop0 and pop1
-    if(n.unlinked == 0){ geno.time[g,]  <- c(g, pop0[1], pop1[1],  diplos$freqs)  }
+    new.freqs     <- c(pop0[-1], pop1[-1])
+    diff.freqs    <- sum(abs(new.freqs  - diplos$freqs ))
+    diplos$freqs  <- new.freqs   # put together pop0 and pop1
+    if(n.unlinked == 0){ geno.time[g,]  <- as.numeric(c(g, pop0[1], pop1[1],  diplos$freqs))  }
     # for each gen of geno.time we have gen, reinforcement in each pop, and the diplo frequencies
     if(n.unlinked > 0){
     tmp.diplos <- diplos %>% 
@@ -236,7 +242,6 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
     geno.time[g,]  <- c(g, pop0[1], pop1[1], 
                         unlist(tmp.diplos %>% select(freqs, geno ) %>% 
                                  spread(key = geno, value = freqs))[names.geno.time]   )
-#    if(g == 10){recover()}
     tmp.diplos2 <- diplos %>% 
       mutate(mean_U = diplos %>% select(starts_with("U")) %>% rowMeans() )      %>% 
       group_by(A.mat, M.mat, F.mat, A.pat ,M.pat, F.pat, pop) %>%
@@ -251,19 +256,22 @@ runGFsim <-function(n.gen = 1000, r12 = .1, r23 = .3,r34 = .5,
                select(meanGenoU, geno ) %>% 
                spread(key = geno, value = meanGenoU))[names.geno.time])
     }
+    time.to.stop <- ((g+1) > min.gen) & (diff.freqs < tol | (g+1) > n.gen | (g+1) > max.gen)
+    print(paste("gen = ",g, "   & diff.freqs = ",diff.freqs))
   }
-  max_reinforce <- max(geno.time[,"reinf_1"])
+  geno.time <- geno.time[1:g,]
+  meanUs    <- meanUs[1:g,]
+  max_reinforce <- max(geno.time[,"reinf_1"],na.rm=TRUE)
   min_diff_A    <- min(abs(data.frame(geno.time) %>% select(starts_with("X1")) %>% select(ends_with("0"))%>%rowSums() -  data.frame(geno.time) %>% select(starts_with("X1")) %>% select(ends_with("1"))%>%rowSums() ))
   max_freq_M0   <- data.frame(geno.time) %>% select(matches("X.1")) %>% select(ends_with("0")) %>% rowSums() %>%max()
   max_freq_F1   <- data.frame(geno.time) %>% select(matches("X..1")) %>% select(ends_with("1")) %>% rowSums() %>%max()
-  final_adapt_diff_unlinked <- diff(rev(meanUs[n.gen,c("U_0","U_1")])) # how much adaptive divergence do we have at the end (we start with complete)
+  final_adapt_diff_unlinked <- diff(rev(meanUs[g,c("U_0","U_1")])) # how much adaptive divergence do we have at the end (we start with complete)
     names(final_adapt_diff_unlinked) <- NULL
-
   return(list(geno.time = data.frame(geno.time), 
               meanUs = data.frame(meanUs),
               dhaps  = data.frame(dhap_components),
               summary.stats = c(max_reinforce = max_reinforce, min_diff_A = min_diff_A, max_freq_M0 = max_freq_M0, max_freq_F1 = max_freq_F1, final_adapt_diff_unlinked = final_adapt_diff_unlinked),
-              params = c(this.order = this.order, n.gen = n.gen, r12 =r12, r23 =r23, r34=r34, s=s, n.unlinked = n.unlinked, prop.replaced0 = prop.replaced0 , prop.replaced1 = prop.replaced1, discrim = discrim)
+              params = c(this.order = this.order, n.gen = n.gen, r12 =r12, r23 =r23, s=s, n.unlinked = n.unlinked, prop.replaced0 = prop.replaced0 , prop.replaced1 = prop.replaced1, discrim = discrim)
         ))
 }
 
