@@ -127,7 +127,7 @@ migrateMateReproduceSelect <- function(diplos, focal.pop, prop.replaced, meiotic
 # WHY DID YOU HARDCODE r12 & r23 YANIV # I did not. these are default values. not hardcoded values
 runGFsim <-function(n.gen = Inf, r12 = 1e-4, r23 = 0, 
                            init.freqs = c(fA_0 = 0, fM_0 = 0, fF_0 = 0,fA_1 = 1, fM_1 = 1, fF_1 = .01), 
-                           discrim = 1, s = .75, tol = 1e-7, max.gen = 2e6, min.gen = 1e3,
+                           discrim = 1, s = .75, tol = 1e-5, max.gen = 2e6, min.gen = 1e3,
                            prop.replaced0 = .1, 
                            prop.replaced1 = .1,
                            this.order = "AMF",
