@@ -5,12 +5,8 @@ link to [google doc draft of manuscript](https://docs.google.com/document/d/18pd
 
 
 
-Papers to read 
-Skepticism towards santa rosalia, or why are there so few kinds of animals? [link](https://wp.biota.utoronto.ca/theseedsofscience/files/2015/05/Felsenstein-1981.pdf) . 
+Papers to read [link](https://docs.google.com/document/d/1YSSJ3pQS20gm4mp8YRLurmDBBZoDQ8-GD3g4ozgZDNU/edit)
 
-The counterintuitive role of sexual selection in species maintenance and speciation [link](https://www.pnas.org/content/111/22/8113) . 
-
-Sexual conflict and speciation. [link](https://www.ncbi.nlm.nih.gov/pubmed/9533125)
 
 Goals for immediate short-term (6/6/19) [link to google doc](https://docs.google.com/document/d/1c7v50N8wgPZeUhGdkkWxScgXnPjqjDlDxqpt6fnb2kA/edit) 
 
