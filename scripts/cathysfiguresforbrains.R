@@ -13,7 +13,7 @@ source("functions_forplots.R")
 # load R object and every time it would be called output, or you can name it example.sim
 # run once or twice with 0 unlinked vs >0 unlinked
 
-this.file <- "/Users/catherinerushworth1/projects/gftheory1/results/outs 0.01 m 0.01 r12 0.5 r23 0.001 M 0.05 n.unl 4.Robj"
+this.file <- "/Users/catherinerushworth1/projects/gftheory_sandbox/outs 0.9 m12 0.05 m23 0.05 r123 1e-04 M 1 n.unl 0.Robj"
 this.title <- str_remove(string=this.file, pattern= "prelimSimResults/out") %>% 
   str_remove(".Robj") %>% 
   str_split(" ")      %>%
