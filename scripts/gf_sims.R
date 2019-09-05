@@ -261,6 +261,7 @@ runGFsim <-function(n.gen = Inf, r12 = 1e-4, r23 = 0,
   }
   geno.time <- geno.time[1:g,]
   meanUs    <- meanUs[1:g,]
+  dhap_components <-  dhap_components[1:g,]
   max_reinforce <- max(geno.time[,"reinf_1"],na.rm=TRUE)
   min_diff_A    <- min(abs(data.frame(geno.time) %>% select(starts_with("X1")) %>% select(ends_with("0"))%>%rowSums() -  data.frame(geno.time) %>% select(starts_with("X1")) %>% select(ends_with("1"))%>%rowSums() ))
   max_freq_M0   <- data.frame(geno.time) %>% select(matches("X.1")) %>% select(ends_with("0")) %>% rowSums() %>%max()
