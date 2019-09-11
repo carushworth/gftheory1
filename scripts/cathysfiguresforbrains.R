@@ -24,8 +24,11 @@ this.title <- str_remove(string=this.file, pattern= "prelimSimResults/out") %>%
   select(vals) %>% pull %>% paste(collapse = ", ")
 
 load(this.file)
-output$meanUs <-  slice(output$meanUs, 1:nrow(output$geno.time))
-output$dhaps <-  slice(output$dhaps, 1:nrow(output$geno.time))
+
+to.keep  <- which(output$geno.time$gen %% floor(nrow(output$geno.time) / 4000) ==1 |  c(1, rowSums(abs(output$geno.time[-1,-c(1:3)] - output$geno.time[-nrow(output$geno.time),-c(1:3)]  ))) > 5e-4)
+output$geno.time <- slice(output$geno.time, to.keep)
+output$meanUs <-  slice(output$meanUs, to.keep)
+output$dhaps <-  slice(output$dhaps, to.keep)
 
 # this is sim #1 from from this cluster run (number 1 in column "sim" in summarystats.csv)
 #example.sim <- output
