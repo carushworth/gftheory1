@@ -24,6 +24,9 @@ this.title <- str_remove(string=this.file, pattern= "prelimSimResults/out") %>%
   select(vals) %>% pull %>% paste(collapse = ", ")
 
 load(this.file)
+output$meanUs <-  slice(output$meanUs, 1:nrow(output$geno.time))
+output$dhaps <-  slice(output$dhaps, 1:nrow(output$geno.time))
+
 # this is sim #1 from from this cluster run (number 1 in column "sim" in summarystats.csv)
 #example.sim <- output
 
@@ -48,7 +51,8 @@ tidy.allele.change <- alleleChange(tidy.freq.change)
 
 
 # unlinked adaptation 
-tidy.MeanU <- tidyingMeanU(runs = output)
+if(sum(is.na(output$meanUs)) == length(is.na(output$meanUs))){ tidy.MeanU <- NA}
+if(sum(is.na(output$meanUs)) != length(is.na(output$meanUs))){ tidy.MeanU <-tidyingMeanU(runs = output)}
 
 
 ## Plots  
@@ -72,7 +76,9 @@ alleleFreqChangePlot(tidy.allele.change, title = this.title)
 ggsave(file="alleleFreqChange_test1.pdf")
 
 # Mean U plots
-hapUnlinkedPlot(tidy.MeanU$haps)
-ggsave(file="hapUnlinked_test1.pdf")
-alleleUnlinkedPlot(tidy.MeanU$alleles)
-ggsave(file="alleleUnlinked_test1.pdf")
+if(!is.na(tidy.MeanU)){
+  hapUnlinkedPlot(tidy.MeanU$haps)
+  ggsave(file="hapUnlinked_test1.pdf")
+  alleleUnlinkedPlot(tidy.MeanU$alleles)
+  ggsave(file="alleleUnlinked_test1.pdf")
+}
