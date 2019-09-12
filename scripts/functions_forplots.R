@@ -16,7 +16,7 @@ hapFreqPlot <- function(tmp.haps, title = NULL){
     scale_x_continuous(trans = "log10")+#,limits = c(100,10000))+
     ggtitle(label = title)+
     theme_light() 
-    return(my.plot)
+  return(my.plot)
 }
 
 # Allele frequencies
