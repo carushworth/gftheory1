@@ -13,8 +13,8 @@ source("functions_forplots.R")
 # load R object and every time it would be called output, or you can name it example.sim
 # run once or twice with 0 unlinked vs >0 unlinked
 
-this.file <- "/Users/catherinerushworth1/projects/gftheory_sandbox/outs 0.9 m12 0.05 m23 0.05 r123 1e-04 M 1 n.unl 0.Robj"
-this.title <- str_remove(string=this.file, pattern= "prelimSimResults/out") %>% 
+this.file <- "/Users/catherinerushworth1/projects/gftheory_sandbox/outputs_18sept19/outs 0.9 m 0.01 r12 0.001 r23 0.001 M 1 n.unl 4.Robj"
+this.title <- str_remove(string=this.file, pattern= ".*/out") %>% 
   str_remove(".Robj") %>% 
   str_split(" ")      %>%
   unlist()            %>%
@@ -27,8 +27,8 @@ load(this.file)
 
 to.keep  <- which(output$geno.time$gen %% floor(nrow(output$geno.time) / 4000) ==1 |  c(1, rowSums(abs(output$geno.time[-1,-c(1:3)] - output$geno.time[-nrow(output$geno.time),-c(1:3)]  ))) > 5e-4)
 output$geno.time <- slice(output$geno.time, to.keep)
-output$meanUs <-  slice(output$meanUs, to.keep)
-output$dhaps <-  slice(output$dhaps, to.keep)
+output$meanUs    <-  slice(output$meanUs, to.keep)
+output$dhaps     <-  slice(output$dhaps, to.keep)
 
 # this is sim #1 from from this cluster run (number 1 in column "sim" in summarystats.csv)
 #example.sim <- output
