@@ -259,19 +259,22 @@ runGFsim <-function(n.gen = Inf, r12 = 1e-4, r23 = 0,
     time.to.stop <- ((g+1) > min.gen) & (diff.freqs < tol | (g+1) > n.gen | (g+1) > max.gen)
     #print(paste("gen = ",g, "   & diff.freqs = ",diff.freqs))
   }
-  geno.time <- geno.time[1:g,]
+  geno.time <- data.frame(geno.time[1:g,])  %>%   
+    mutate(teo_reinforce = (reinf_1 - reinf_1[1])  / (1- reinf_1[1])  ) 
   meanUs    <- meanUs[1:g,]
   dhap_components <-  dhap_components[1:g,]
-  max_reinforce <- max(geno.time[,"reinf_1"],na.rm=TRUE)
+  max_reinforce_teo <- max(geno.time[,"teo_reinforce"],na.rm=TRUE)
   min_diff_A    <- min(abs(data.frame(geno.time) %>% select(starts_with("X1")) %>% select(ends_with("0"))%>%rowSums() -  data.frame(geno.time) %>% select(starts_with("X1")) %>% select(ends_with("1"))%>%rowSums() ))
   max_freq_M0   <- data.frame(geno.time) %>% select(matches("X.1")) %>% select(ends_with("0")) %>% rowSums() %>%max()
   max_freq_F1   <- data.frame(geno.time) %>% select(matches("X..1")) %>% select(ends_with("1")) %>% rowSums() %>%max()
   final_adapt_diff_unlinked <- diff(rev(meanUs[g,c("U_0","U_1")])) # how much adaptive divergence do we have at the end (we start with complete)
+  start_reinforce <- min(which(geno.time[,"teo_reinforce"]>0))
+  end_reinforce <- max(which(geno.time[,"teo_reinforce"]>0))
     names(final_adapt_diff_unlinked) <- NULL
-  return(list(geno.time = data.frame(geno.time), 
+  return(list(geno.time =  geno.time, 
               meanUs = data.frame(meanUs),
               dhaps  = data.frame(dhap_components),
-              summary.stats = c(max_reinforce = max_reinforce, min_diff_A = min_diff_A, max_freq_M0 = max_freq_M0, max_freq_F1 = max_freq_F1, final_adapt_diff_unlinked = final_adapt_diff_unlinked),
+              summary.stats = c(max_reinforce_teo = max_reinforce_teo, min_diff_A = min_diff_A, max_freq_M0 = max_freq_M0, max_freq_F1 = max_freq_F1, final_adapt_diff_unlinked = final_adapt_diff_unlinked, start_reinforce,end_reinforce,tot.gen = g),
               params = c(this.order = this.order, n.gen = n.gen, r12 =r12, r23 =r23, s=s, n.unlinked = n.unlinked, prop.replaced0 = prop.replaced0 , prop.replaced1 = prop.replaced1, discrim = discrim)
         ))
 }
