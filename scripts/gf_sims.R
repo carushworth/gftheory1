@@ -133,7 +133,8 @@ runGFsim <-function(n.gen = Inf, r12 = 1e-4, r23 = 0,
                            this.order = "AMF",
                            n.unlinked =0,
                            get.blank = FALSE,
-                           delta_hap_components = FALSE
+                           delta_hap_components = FALSE,
+                           return.reinforce.only = TRUE
                     ){
   if(is.na(tol)){  max.gen  = n.gen; tol <- Inf}
   # SETUP (this makes all the different diploid genos)
@@ -271,6 +272,13 @@ runGFsim <-function(n.gen = Inf, r12 = 1e-4, r23 = 0,
   start_reinforce <- min(which(geno.time[,"teo_reinforce"]>0))
   end_reinforce <- max(which(geno.time[,"teo_reinforce"]>0))
     names(final_adapt_diff_unlinked) <- NULL
+  if(return.reinforce.only)  {
+    to.keep  <- which(geno.time$gen %% floor(nrow(geno.time) / 4000) ==1 |  c(1, rowSums(abs(geno.time[-1,-c(1:3)] - geno.time[-nrow(geno.time),-c(1:3)]  ))) > 5e-4)
+    geno.time <- slice(geno.time, to.keep)  %>% select(gen, reinf_1)
+    return(list(geno.time =  geno.time, 
+                params = c(this.order = this.order, n.gen = n.gen, r12 =r12, r23 =r23, s=s, n.unlinked = n.unlinked, prop.replaced0 = prop.replaced0 , prop.replaced1 = prop.replaced1, discrim = discrim)
+    ))
+  }
   return(list(geno.time =  geno.time, 
               meanUs = data.frame(meanUs),
               dhaps  = data.frame(dhap_components),
