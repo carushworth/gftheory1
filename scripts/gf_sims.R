@@ -10,7 +10,7 @@ meiosisGFcomplex <- function(this.dip, tmp.haplo.names, r12,r23, this.order = "A
   # physical order AMF 
   # genet
   meiosis.haps <- 
-    .5 * (1 - r12)* (1 - r23) *(as.numeric(tmp.haplo.names == paste(this.dip[paste(this.order,c("mat","mat","mat"),sep=".")][reorder], collapse = ""))) + # no_rec 
+    zapsmall(.5 * (1 - r12)* (1 - r23) *(as.numeric(tmp.haplo.names == paste(this.dip[paste(this.order,c("mat","mat","mat"),sep=".")][reorder], collapse = ""))) + # no_rec 
     .5 * (1 - r12)* (1 - r23) *(as.numeric(tmp.haplo.names == paste(this.dip[paste(this.order,c("pat","pat","pat"),sep=".")][reorder], collapse = ""))) + # no_rec   
     #
     .5 * (r12)    * (1 - r23) *(as.numeric(tmp.haplo.names == paste(this.dip[paste(this.order,c("mat","pat","pat"),sep=".")][reorder], collapse = ""))) + # 12 rec 
@@ -20,8 +20,8 @@ meiosisGFcomplex <- function(this.dip, tmp.haplo.names, r12,r23, this.order = "A
     .5 * (1 - r12)* (    r23) *(as.numeric(tmp.haplo.names == paste(this.dip[paste(this.order,c("pat","pat","mat"),sep=".")][reorder], collapse = ""))) + # 23_rec 
     #
     .5 * (    r12)* (    r23) *(as.numeric(tmp.haplo.names == paste(this.dip[paste(this.order,c("mat","pat","mat"),sep=".")][reorder],collapse = ""))) + # both_rec 
-    .5 * (    r12)* (    r23) *(as.numeric(tmp.haplo.names == paste(this.dip[paste(this.order,c("pat","mat","pat"),sep=".")][reorder],collapse = "")))   # both_rec  
-  return(meiosis.haps)  
+    .5 * (    r12)* (    r23) *(as.numeric(tmp.haplo.names == paste(this.dip[paste(this.order,c("pat","mat","pat"),sep=".")][reorder],collapse = ""))))   # both_rec  
+  return(meiosis.haps)  # helps with numeric precision
 }
 
 # meiosis for unlinked loci
@@ -53,20 +53,20 @@ matingCombos <- function(my.haps, my.dips, discrim, meiotic.prod){
 
 
 diploidSel <- function(tmp.freq, my.dips, s, focal.pop){
-  s_linked <- s_unlinked <- s # Currently selection on linked and unlinked loci is eaual... this can be changed
+  s_linked <- s_unlinked <- s[paste("s",focal.pop,sep="")] # Currently selection on linked and unlinked loci is eaual... this can be changed
   n.maladapt_unlinked <- rowSums(my.dips[,grep("U",colnames(my.dips))] != focal.pop)
   n.maladapt_linked <- rowSums(my.dips[,grep("A",colnames(my.dips))] != focal.pop)
-  w          <- (1 - s_unlinked)^ n.maladapt_unlinked * (1-s_linked)^n.maladapt_linked 
-  wbar       <- sum(tmp.freq *  w) # mean fitness = the sum of t
-  wrel       <- w / wbar  #relative fitness
-  newfreq    <-  wrel  * tmp.freq
-  return(newfreq)
+  w          <- zapsmall((1 - s_unlinked)^ n.maladapt_unlinked * (1-s_linked)^n.maladapt_linked )
+  wbar       <- zapsmall(sum(tmp.freq *  w)) # mean fitness = the sum of t
+  wrel       <- zapsmall(w / wbar)  #relative fitness
+  newfreq    <- zapsmall(wrel  * tmp.freq)
+  return(newfreq) # again for precision
 }
 
 migrateMateReproduceSelect <- function(diplos, focal.pop, prop.replaced, meiotic.prod, discrim, s, delta_hap_components, hap.ids){
   dhap <- rep(NA, 4*length(hap.ids))
-  home.haps  <- colSums(meiotic.prod * diplos$freqs[diplos$pop == focal.pop] ) * (1-prop.replaced) 
-  away.haps  <- colSums(meiotic.prod * diplos$freqs[diplos$pop != focal.pop] ) * (prop.replaced) # prop.replaced is migration rate
+  home.haps  <- zapsmall(colSums(meiotic.prod * diplos$freqs[diplos$pop == focal.pop] ) * (1-prop.replaced)) 
+  away.haps  <- zapsmall(colSums(meiotic.prod * diplos$freqs[diplos$pop != focal.pop] ) * (prop.replaced)) # prop.replaced is migration rate
   my.haps    <- home.haps + away.haps# pollen pool
   if(delta_hap_components){
     init.hap <- colSums(meiotic.prod * diplos$freqs[diplos$pop == focal.pop])
@@ -88,7 +88,7 @@ migrateMateReproduceSelect <- function(diplos, focal.pop, prop.replaced, meiotic
   pop.reinforce <- 1 - sum(rowSums(new.genos) * p.migrant ,na.rm=TRUE) /prop.replaced   # quantifying reinforcement as 1 - prob mating with migrant
   # first thing in pop0 and pop1
   before.sel <- c(t(new.genos)) # flip rows and columns and then flatten to make  new diploid freqsQ
-  after.sel  <- diploidSel(tmp.freq = before.sel, my.dips = my.dips, s = s , focal.pop = focal.pop)
+  after.sel  <- diploidSel(tmp.freq = before.sel, my.dips = my.dips, s = s, focal.pop = focal.pop)
   if(delta_hap_components){
     dhap <- full_join(tibble(
       migration_pollen = dp.migration.pollen, 
@@ -137,8 +137,14 @@ runGFsim <-function(n.gen = Inf, r12 = 1e-4, r23 = 0,
                            return.reinforce.only = TRUE
                     ){
   if(is.na(tol)){  max.gen  = n.gen; tol <- Inf}
+  if(length(s)==2){my.s = -99}
+  if(length(s)==1){
+    my.s <- s 
+    s    <- c(s[1],s[1])
+  }
+  names(s) <- c("s0","s1")
   # SETUP (this makes all the different diploid genos)
-  print(sprintf("s = %s, m = %s, r12 = %s, r23 = %s, init_freq = %s", s, prop.replaced0, r12, r23, init.freqs["fF_1"]))
+  print(sprintf("s = %s, m = %s, r12 = %s, r23 = %s, init_freq = %s, s0 = %s, s1 = %s", my.s, prop.replaced0, r12, r23, init.freqs["fF_1"],s["s0"], s["s1"]))
   diplos <- expand.grid(data.frame(rbind(numeric(length = 2*(3+n.unlinked)+1),1))) 
   tmp.names <- c("A","M","F",paste("U", 0:n.unlinked,sep ="")[-1])
   colnames(diplos) <- c(paste(rep(tmp.names,times = 2), rep(c("mat","pat"), each = length(tmp.names)), sep="."),"pop")
@@ -159,6 +165,7 @@ runGFsim <-function(n.gen = Inf, r12 = 1e-4, r23 = 0,
   gf.complex <- unique(diplos[,grep("A|M|F", colnames(diplos))])
   tmp.gf     <- apply(diplos[diplos$pop == 0,grep("A|M|F", colnames(diplos))],1, paste,collapse="") 
   three.loc.meiosis <- t(apply(gf.complex,1, meiosisGFcomplex, tmp.haplo.names = unique(str_sub(haplo.names,1,3)), r12 = r12, r23 = r23,  this.order = this.order) )
+  three.loc.meiosis  <- (three.loc.meiosis / rowSums(three.loc.meiosis))  # fix for numerical precision
   rownames(three.loc.meiosis) <- apply(gf.complex,1, paste,collapse="")
   colnames(three.loc.meiosis) <- unique(str_sub(haplo.names,1,3))
   three.loc.meiosis           <- three.loc.meiosis[ tmp.gf,str_sub(haplo.names,1,3)]
@@ -276,14 +283,14 @@ runGFsim <-function(n.gen = Inf, r12 = 1e-4, r23 = 0,
     to.keep  <- which(geno.time$gen %% floor(nrow(geno.time) / 4000) ==1 |  c(1, rowSums(abs(geno.time[-1,-c(1:3)] - geno.time[-nrow(geno.time),-c(1:3)]  ))) > 5e-4)
     geno.time <- slice(geno.time, to.keep)  %>% select(gen, reinf_1)
     return(list(geno.time =  geno.time, 
-                params = c(this.order = this.order, n.gen = n.gen, r12 =r12, r23 =r23, s=s, n.unlinked = n.unlinked, prop.replaced0 = prop.replaced0 , prop.replaced1 = prop.replaced1, discrim = discrim)
+                params = c(this.order = this.order, n.gen = n.gen, r12 =r12, r23 =r23, s=my.s, n.unlinked = n.unlinked, prop.replaced0 = prop.replaced0 , prop.replaced1 = prop.replaced1, discrim = discrim, s0 = s["s0"],s1 = s["s1"])
     ))
   }
   return(list(geno.time =  geno.time, 
               meanUs = data.frame(meanUs),
               dhaps  = data.frame(dhap_components),
               summary.stats = c(max_reinforce_teo = max_reinforce_teo, min_diff_A = min_diff_A, max_freq_M0 = max_freq_M0, max_freq_F1 = max_freq_F1, final_adapt_diff_unlinked = final_adapt_diff_unlinked, start_reinforce,end_reinforce,tot.gen = g),
-              params = c(this.order = this.order, n.gen = n.gen, r12 =r12, r23 =r23, s=s, n.unlinked = n.unlinked, prop.replaced0 = prop.replaced0 , prop.replaced1 = prop.replaced1, discrim = discrim)
+              params = c(this.order = this.order, n.gen = n.gen, r12 =r12, r23 =r23, s=my.s, n.unlinked = n.unlinked, prop.replaced0 = prop.replaced0 , prop.replaced1 = prop.replaced1, discrim = discrim, s0 = s["s0"],s1 = s["s1"])
         ))
 }
 
