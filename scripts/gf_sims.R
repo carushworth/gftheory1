@@ -127,22 +127,31 @@ migrateMateReproduceSelect <- function(diplos, focal.pop, prop.replaced, meiotic
 # WHY DID YOU HARDCODE r12 & r23 YANIV # I did not. these are default values. not hardcoded values
 runGFsim <-function(n.gen = Inf, r12 = 1e-4, r23 = 0, 
                            init.freqs = c(fA_0 = 0, fM_0 = 0, fF_0 = 0,fA_1 = 1, fM_1 = 1, fF_1 = .01), 
-                           discrim = 1, s = .75, tol = 1e-5, max.gen = 2e6, min.gen = 1e3,
+                           discrim = 1, s = NULL, tol = 1e-5, max.gen = 2e6, min.gen = 1e3,
                            prop.replaced0 = .1, 
                            prop.replaced1 = .1,
                            this.order = "AMF",
                            n.unlinked =0,
                            get.blank = FALSE,
                            delta_hap_components = FALSE,
-                           return.reinforce.only = TRUE
+                           return.reinforce.only = TRUE,
+                           s0 = NULL,
+                           s1 = NULL
                     ){
+  if(is.null(s) & is.null(s0) & is.null(s1) ){
+    warning("no s specified")
+    return(":(")
+  }
+  if(is.null(s) & !(is.null(s0) & is.null(s1))){
+    s <- c(s0 = s0, s1 = s1)
+  }
   if(is.na(tol)){  max.gen  = n.gen; tol <- Inf}
   if(length(s)==2){my.s = -99}
   if(length(s)==1){
     my.s <- s 
     s    <- c(s[1],s[1])
+    names(s) <- c("s0","s1")
   }
-  names(s) <- c("s0","s1")
   # SETUP (this makes all the different diploid genos)
   print(sprintf("s = %s, m = %s, r12 = %s, r23 = %s, init_freq = %s, s0 = %s, s1 = %s", my.s, prop.replaced0, r12, r23, init.freqs["fF_1"],s["s0"], s["s1"]))
   diplos <- expand.grid(data.frame(rbind(numeric(length = 2*(3+n.unlinked)+1),1))) 
