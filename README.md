@@ -1,6 +1,8 @@
 # gftheory1
 best thing ever
 
+link to [overleaf draft of manuscript](https://www.overleaf.com/8617445326hpkmjzqfnhny)
+
 link to [google doc draft of manuscript](https://docs.google.com/document/d/18pdw5CttDYdg0V2INHVagD7uho_z5mFYnUFtDHbsCYY/edit) and to [checklist](https://docs.google.com/spreadsheets/d/1PYLRiYHiHy9lDqOb5EaeKS1fbv7OepgbmYvIK_CGsio/edit#gid=0)
 
 
